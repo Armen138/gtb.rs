@@ -1,0 +1,17 @@
+{
+    "id": "main menu",
+    "entities": [
+        {
+            "id": "main",
+            "X": 0.0,
+            "Y": 0.0,
+            "image": "main.png"        
+        },
+        {
+            "id": "play",
+            "X": 0.0,
+            "Y": 0.0,
+            "image": "play.png"        
+        }
+    ]
+}

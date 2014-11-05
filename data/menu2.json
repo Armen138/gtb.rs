@@ -1,0 +1,25 @@
+{
+    "name": "main menu",
+    "position": { "X": 0.0, "Y": 0.0 },
+    "image": "none",
+    "entities": [
+        {
+            "name": "main",
+            "position": {
+                "X": 0.0,
+                "Y": 0.0
+            },
+            "image": "main.png",
+            "entities": []
+        },
+        {
+            "name": "play",
+            "position": {
+                "X": 0.0,
+                "Y": 0.0
+            },
+            "image": "play.png",
+            "entities": []       
+        }
+    ]
+}

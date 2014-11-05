@@ -1,0 +1,15 @@
+[package]
+
+name = "Game Tool Box"
+version = "0.0.1"
+authors = [ "Armen138 <armen138@armen138.com>" ]
+
+[lib]
+name = "gtb"
+path = "src/gtb/gtb.rs"
+
+[[bin]]
+
+name = "main"
+
+
