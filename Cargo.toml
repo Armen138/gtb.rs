@@ -8,6 +8,11 @@ authors = [ "Armen138 <armen138@armen138.com>" ]
 name = "gtb"
 path = "src/gtb/gtb.rs"
 
+[dependencies.glutin]
+git = "https://github.com/tomaka/glutin.git"
+
+[dependencies.gl]
+git = "https://github.com/bjz/gl-rs"
 [[bin]]
 
 name = "main"

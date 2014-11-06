@@ -2,18 +2,33 @@ use serialize::{json,Decodable,Decoder,Encodable,Encoder};
 use std::io::File;
 
 pub struct Game {
-    state: GameState
+    state: GameState,
+    window: ::glutin::Window
 }
 
 impl Game {
     pub fn new(initial_state: GameState) -> Game {
-        Game { state: initial_state } 
+        Game { 
+            state: initial_state,
+            window: ::glutin::Window::new().unwrap()
+        } 
     }
     pub fn run(& mut self) {
-        loop {
+        //let window = ::glutin::Window::new().unwrap();
+        unsafe { self.window.make_current() };
+        ::gl::load_with(|symbol| self.window.get_proc_address(symbol));
+        unsafe { ::gl::ClearColor(0.0, 1.0, 0.0, 1.0) };
+
+        while !self.window.is_closed() {
+            self.window.wait_events();
+            unsafe { ::gl::Clear(::gl::COLOR_BUFFER_BIT) };
             self.state.root.draw();
-            break;
+            self.window.swap_buffers();
         }
+        //loop {
+            //self.state.root.draw();
+            //break;
+        //}
     }
     pub fn set_state(& mut self, new_state: GameState) {
         println!("setting new game state");
@@ -62,11 +77,11 @@ impl Entity {
         let path = &Path::new(file_name);
         let display = path.display();
         let mut file = match File::open(path) {
-            Err(why) => fail!("couldn't open {}: {}", display, why.desc),
+            Err(why) => panic!("couldn't open {}: {}", display, why.desc),
             Ok(file) => file,
         };
         let contents = match file.read_to_string() {
-            Err(why) => fail!("failed to read file"),
+            Err(why) => panic!("paniced to read file"),
             Ok(contents) => contents,
         };
         
