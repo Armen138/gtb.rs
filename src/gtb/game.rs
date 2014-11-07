@@ -3,14 +3,43 @@ use std::io::File;
 
 pub struct Game {
     state: GameState,
-    window: ::glutin::Window
+    window: ::glutin::Window,
+    mouse_position: ::core::Position<int>
 }
 
 impl Game {
+    fn handle_event(& mut self, event: ::glutin::Event) {
+        match event {
+            ::glutin::Event::MouseMoved(pos) => {
+                //(self.mouse_position.x, self.mouse_position.y) = pos;
+                self.mouse_position.set(pos.val0(), pos.val1());
+                //self.mouse_position.x = pos.val0();
+                //self.mouse_position.y = pos.val1();
+                //println!("mouse move: {}, {}", x, y);
+                self.state.root.dispatch_mousemove(self.mouse_position);
+            }
+            ::glutin::Event::MouseInput(state, button) => {
+                
+                match state {
+                    ::glutin::ElementState::Pressed => {                        
+                        self.state.root.dispatch_click(::core::MouseButton::Left, self.mouse_position);
+                        self.state.root.dispatch_mousedown(::core::MouseButton::Left, self.mouse_position);
+                    }
+                    ::glutin::ElementState::Released => {
+                        self.state.root.dispatch_mouseup(::core::MouseButton::Left, self.mouse_position);
+                    }
+                }
+            }
+            _ => {
+                println!("unimplemented glutin event.");
+            }
+        }
+    }
     pub fn new(initial_state: GameState) -> Game {
         Game { 
             state: initial_state,
-            window: ::glutin::Window::new().unwrap()
+            window: ::glutin::Window::new().unwrap(),
+            mouse_position: ::core::Position::new(0, 0)
         } 
     }
     pub fn run(& mut self) {
@@ -20,11 +49,24 @@ impl Game {
         unsafe { ::gl::ClearColor(0.0, 1.0, 0.0, 1.0) };
 
         while !self.window.is_closed() {
-            self.window.wait_events();
+            let mut events = self.window.poll_events();
+            for ev in events {
+                self.handle_event(ev);
+                //match(ev) {
+                    //::glutin::Event::MouseMoved(pos) => {
+                        //let (x, y) = pos;
+                        //println!("mouse move: {}, {}", x, y);
+                    //}
+                    //_ => {
+                        //println!("unimplemented glutin event.");
+                    //}
+                //}
+            }
             unsafe { ::gl::Clear(::gl::COLOR_BUFFER_BIT) };
             self.state.root.draw();
             self.window.swap_buffers();
         }
+        //
         //loop {
             //self.state.root.draw();
             //break;
@@ -47,7 +89,7 @@ impl GameState {
 }
 
 pub struct EntityEvents {
-    pub click: Option<|position: ::core::Position|:'static>
+    pub click: Option<|position: ::core::Position<int>|:'static>
 }
 
 impl<S: Decoder<E>, E> Decodable<S, E> for EntityEvents {
@@ -64,9 +106,10 @@ impl<S: Encoder<E>, E> Encodable<S, E> for EntityEvents {
 
 #[deriving(Decodable, Encodable)]
 pub struct Entity {
-    pub position: ::core::Position,
+    pub position: ::core::Position<int>,
     pub name: String,
-    entities: Vec<Entity>,
+    size: Option<::core::Size<int>>,
+    children: Vec<Entity>,
     events: Option<EntityEvents>
 }
 
@@ -81,56 +124,79 @@ impl Entity {
             Ok(file) => file,
         };
         let contents = match file.read_to_string() {
-            Err(why) => panic!("paniced to read file"),
+            Err(why) => panic!("failed to read file, {}", why.desc),
             Ok(contents) => contents,
         };
         
-        let decoded: Entity = json::decode(contents.as_slice()).unwrap();
-        println!("data: {}", decoded.entities[0].name);
+        let decoded: Entity = match json::decode(contents.as_slice()) {
+            Err(why) => panic!("panic! error decoding json, {}", why),
+            Ok(decoded) => decoded,
+        };
         decoded
     }
-    pub fn new(name: String, x: f64, y: f64) -> Entity {
+    pub fn new(name: String, x: int, y: int) -> Entity {
         Entity {
             position: ::core::Position{x: x, y: y},
+            size: None,
             name: name, //"generic",
-            entities: Vec::new(),
+            children: Vec::new(),
             events: Some(EntityEvents{click:None})
         }
     }
     pub fn push(& mut self, other: Entity) {
-        self.entities.push(other);
+        //let mut children = self.children;
+        self.children.push(other);
     }
 
     pub fn draw(& mut self) {
         // draw stuff
-        println!("drawing entity");
-        let p = ::core::Position::new(1.1, 1.4);
-        self.clickEvent(p);
-        for ent in self.entities.iter_mut() {
+        //println!("drawing entity");
+        let p = ::core::Position::new(1, 4);
+        self.dispatch_click(::core::MouseButton::Left, p);
+        //let mut children = self.children;
+        for ent in self.children.iter_mut() {
             ent.draw();
         }
     }
 
-    fn clickEvent(& mut self, pos: ::core::Position) {
-        match(self.events) {
+    pub fn dispatch_mousemove(& mut self, pos: ::core::Position<int>) {
+
+    }
+
+    pub fn dispatch_mouseup(& mut self, 
+                            button: ::core::MouseButton, 
+                            pos: ::core::Position<int>) {
+
+    }
+
+    pub fn dispatch_mousedown(& mut self, 
+                              button: ::core::MouseButton, 
+                              pos: ::core::Position<int>) {
+
+    }
+
+    pub fn dispatch_click(& mut self, 
+                      button: ::core::MouseButton, 
+                      pos: ::core::Position<int>) {
+        match self.events {
             Some(ref mut events) => {
-                match(events.click) {
+                match events.click {
                     Some(ref mut click) => (*click)(pos),
                     None => {
-                        println!("no click event listener");
+                        //println!("no click event listener");
                         ()
                     }
                 }
             },
             None => {
-                println!("no event listener object");   
+                //println!("no event listener object");   
                 ()
             }
         };
     }
-    pub fn click(& mut self, cb: |pos: ::core::Position|:'static) {
-        let p = ::core::Position::new(1.1, 1.2);
-        match(self.events) {
+    pub fn click(& mut self, cb: |pos: ::core::Position<int>|:'static) {
+        let p = ::core::Position::new(1i, 2i);
+        match self.events {
             Some(ref mut events) => {
                 println!("assign click listener");
                 events.click = Some(cb)
@@ -146,8 +212,9 @@ impl Entity {
 
 impl Index<String, Entity> for GameState {
     fn index<'a>(&'a self, rhs: &String) -> &'a Entity {
-        for ent in self.root.entities.iter() {               
-            if(&ent.name == rhs) {
+        //let children = self.root.children;
+        for ent in self.root.children.iter() {               
+            if &ent.name == rhs {
                 return ent;
             }
         }
@@ -157,8 +224,9 @@ impl Index<String, Entity> for GameState {
 
 impl IndexMut<String, Entity> for GameState {
     fn index_mut<'a>(&'a mut self, rhs: &String) -> &'a mut Entity {
-        for ent in self.root.entities.iter_mut() {               
-            if(&ent.name == rhs) {
+        //let mut children = self.root.children;
+        for ent in self.root.children.iter_mut() {               
+            if &ent.name == rhs {
                 return ent;
             }
         }
@@ -168,8 +236,9 @@ impl IndexMut<String, Entity> for GameState {
 
 impl IndexMut<String, Entity> for Entity {
     fn index_mut<'a>(&'a mut self, rhs: &String) -> &'a mut Entity {
-        for ent in self.entities.iter_mut() {               
-            if(&ent.name == rhs) {
+        //let mut children = self.children;
+        for ent in self.children.iter_mut() {               
+            if &ent.name == rhs {
                 return ent;
             }
         }
@@ -179,8 +248,9 @@ impl IndexMut<String, Entity> for Entity {
 
 impl Index<String, Entity> for Entity {
     fn index<'a>(&'a self, rhs: &String) -> &'a Entity {
-        for ent in self.entities.iter() {               
-            if(&ent.name == rhs) {
+        //let mut children = self.children;
+        for ent in self.children.iter() {               
+            if &ent.name == rhs {
                 return ent;
             }
         }

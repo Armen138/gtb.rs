@@ -1,25 +1,29 @@
 {
     "name": "main menu",
-    "position": { "X": 0.0, "Y": 0.0 },
+    "position": { "x": 0, "y": 0 },
     "image": "none",
-    "entities": [
+    "children": [
         {
             "name": "main",
             "position": {
-                "X": 0.0,
-                "Y": 0.0
+                "x": 0,
+                "y": 0
+            },
+            "bbox": {
+                "width": 100,
+                "height": 100
             },
             "image": "main.png",
-            "entities": []
+            "children": []
         },
         {
             "name": "play",
             "position": {
-                "X": 0.0,
-                "Y": 0.0
+                "x": 0,
+                "y": 0
             },
             "image": "play.png",
-            "entities": []       
+            "children": []       
         }
     ]
 }

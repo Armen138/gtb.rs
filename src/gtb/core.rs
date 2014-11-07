@@ -1,40 +1,60 @@
-use serialize::{json,Decodable,Encodable};
+use serialize::{Encodable};
 
-#[deriving(Decodable, Encodable)]
-pub struct Position {
-    pub x: f64,
-    pub y: f64
+pub enum MouseButton {
+    Left,
+    Right,
+    Middle
 }
 
-impl Position {
-    pub fn new(x: f64, y: f64) -> Position {
+#[deriving(Decodable, Encodable)]
+pub struct Rectangle<T:Num> {    
+    pub position: Position<T>,
+    pub size: Size<T>
+}
+
+#[deriving(Decodable, Encodable)]
+pub struct Size<T:Num> {
+    pub width: T,
+    pub height: T
+}
+
+#[deriving(Decodable, Encodable)]
+pub struct Position<T:Num> {
+    pub x: T,
+    pub y: T
+}
+
+impl<T:Num> Position<T> {
+    pub fn new(x: T, y: T) -> Position<T> {
         Position { x: x, y: y }
     }
 
-    pub fn distance(&self, other: Position) -> (f64) {
-        let distance = ((self.x - other.x) * (self.x - other.x) +
-                        (self.y - other.y) * (self.y - other.y)).sqrt();
+    pub fn distance(&self, other: Position<T>) -> (T) {
+        let distance = (self.x - other.x) * (self.x - other.x) +
+                        (self.y - other.y) * (self.y - other.y); //.sqrt();
         distance
     }
 
-    pub fn set(& mut self, x: f64, y: f64) {
+    pub fn set(& mut self, x: T, y: T) {
         self.x = x;
         self.y = y;
     }
 
-    pub fn get(&self) -> (f64, f64) {
-        (self.x, self.y)
-    }
+    //pub fn get(&self) -> (T, T) {
+        //let x = self.x;
+        //let y = self.y;
+        //(x, y)
+    //}
 }
 
-impl Add<Position, Position> for Position {
-    fn add(&self, _rhs: &Position) -> Position {
+impl<T:Num> Add<Position<T>, Position<T> > for Position<T> {
+    fn add(&self, _rhs: &Position<T>) -> Position<T> {
         Position { x: self.x + _rhs.x, y: self.y + _rhs.y }
     }
 }
 
-impl Sub<Position, Position> for Position {
-    fn sub(&self, _rhs: &Position) -> Position {
+impl<T:Num> Sub<Position<T>, Position<T> > for Position<T> {
+    fn sub(&self, _rhs: &Position<T>) -> Position<T> {
         Position { x: self.x - _rhs.x, y: self.y - _rhs.y }
     }
 }
