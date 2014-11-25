@@ -1,4 +1,5 @@
 use serialize::{Encodable};
+use std::num::Num;
 
 pub enum MouseButton {
     Left,
