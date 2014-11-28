@@ -4,7 +4,8 @@ use std::io::File;
 pub struct Game {
     state: GameState,
     window: ::glutin::Window,
-    mouse_position: ::core::Position<int>
+    mouse_position: ::core::Position<int>,
+    close: bool
 }
 
 impl Game {
@@ -30,6 +31,16 @@ impl Game {
                     }
                 }
             }
+            ::glutin::Event::KeyboardInput(state, keycode, virtualkey) => {
+                match state {
+                    ::glutin::ElementState::Pressed => {
+                        self.state.root.dispatch_keydown(keycode);
+                    }
+                    ::glutin::ElementState::Released => {
+                        self.state.root.dispatch_keyup(keycode);
+                    }
+                }
+            }
             _ => {
                 println!("unimplemented glutin event.");
             }
@@ -39,7 +50,8 @@ impl Game {
         Game { 
             state: initial_state,
             window: ::glutin::Window::new().unwrap(),
-            mouse_position: ::core::Position::new(0, 0)
+            mouse_position: ::core::Position::new(0, 0),
+            close: false
         } 
     }
     pub fn run(& mut self) {
@@ -48,7 +60,8 @@ impl Game {
         ::gl::load_with(|symbol| self.window.get_proc_address(symbol));
         unsafe { ::gl::ClearColor(0.0, 1.0, 0.0, 1.0) };
 
-        while !self.window.is_closed() {
+        //while !self.window.is_closed() {
+        while !self.close {
             let mut events = self.window.poll_events();
             for ev in events {
                 self.handle_event(ev);
@@ -66,6 +79,7 @@ impl Game {
             self.state.root.draw();
             self.window.swap_buffers();
         }
+        //drop(self.window);
         //
         //loop {
             //self.state.root.draw();
@@ -79,7 +93,7 @@ impl Game {
 }
 
 pub struct GameState {
-    root: Entity
+    pub root: Entity
 }
 
 impl GameState {
@@ -89,12 +103,16 @@ impl GameState {
 }
 
 pub struct EntityEvents {
-    pub click: Option<|position: ::core::Position<int>|:'static>
+    pub click: Option<|position: ::core::Position<int>|:'static>,
+    pub keyup: Option<|code: u8|:'static>
 }
 
 impl<S: Decoder<E>, E> Decodable<S, E> for EntityEvents {
     fn decode(decoder: &mut S) -> Result<EntityEvents, E> {
-        Ok(EntityEvents{click: None})
+        Ok(EntityEvents{
+            click: None,
+            keyup: None
+        })
     }
 }
 
@@ -140,7 +158,10 @@ impl Entity {
             size: None,
             name: name, //"generic",
             children: Vec::new(),
-            events: Some(EntityEvents{click:None})
+            events: Some(EntityEvents{
+                click:None,
+                keyup:None
+            })
         }
     }
     pub fn push(& mut self, other: Entity) {
@@ -151,12 +172,35 @@ impl Entity {
     pub fn draw(& mut self) {
         // draw stuff
         //println!("drawing entity");
-        let p = ::core::Position::new(1, 4);
-        self.dispatch_click(::core::MouseButton::Left, p);
+        //let p = ::core::Position::new(1, 4);
+        //self.dispatch_click(::core::MouseButton::Left, p);
         //let mut children = self.children;
         for ent in self.children.iter_mut() {
             ent.draw();
         }
+    }
+
+    pub fn dispatch_keyup(& mut self, code: u8) {
+        match self.events {
+            Some(ref mut events) => {
+                match events.keyup {
+                    Some(ref mut keyup) => (*keyup)(code),
+                    None => {
+                        //println!("no click event listener");
+                        ()
+                    }
+                }
+            },
+            None => {
+                //println!("no event listener object");   
+                ()
+            }
+        };
+
+    }
+
+    pub fn dispatch_keydown(& mut self, code: u8) {
+
     }
 
     pub fn dispatch_mousemove(& mut self, pos: ::core::Position<int>) {
@@ -194,6 +238,24 @@ impl Entity {
             }
         };
     }
+    pub fn keyup(& mut self, cb: |code: u8|:'static) {
+        match self.events {
+            Some(ref mut events) => {
+                println!("assign keyup listener");
+                events.keyup = Some(cb)
+            },
+            None => {
+                println!("no place to assign a listener");
+                self.events = Some(EntityEvents{
+                    keyup : Some(cb),
+                    click: None
+                });
+                ()
+            }
+        };
+
+    }
+
     pub fn click(& mut self, cb: |pos: ::core::Position<int>|:'static) {
         let p = ::core::Position::new(1i, 2i);
         match self.events {
@@ -203,7 +265,10 @@ impl Entity {
             },
             None => {
                 println!("no place to assign a listener");
-                self.events = Some(EntityEvents{click: Some(cb)});
+                self.events = Some(EntityEvents{
+                    click: Some(cb),
+                    keyup: None
+                });
                 ()
             }
         };
